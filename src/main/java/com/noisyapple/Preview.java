@@ -16,8 +16,13 @@ import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JMenu;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
 import javax.swing.JOptionPane;
 import javax.swing.JPanel;
+import javax.swing.event.MenuEvent;
+import javax.swing.event.MenuListener;
 
 
 @SuppressWarnings("serial")
@@ -30,13 +35,19 @@ public class Preview extends JFrame {
     private LayeredFigure lFigure;
 
     private JPanel mainPanel, toolsPanel, toolsPanelA, toolsPanelB;
-    private CustomCanvas canvas;
+
+    private JMenuBar menuBar;
+    private JMenu menuTransormations, menuExit;
+    private JMenuItem mItemTranslate, mItemRotate, mItemScale, mItemShear;
+
     private JButton btnTransUp, btnTransRight, btnTransDown, btnTransLeft;
     private JButton btnRotateRight, btnRotateLeft;
     private JButton btnScaleUp, btnScaleDown;
     private JButton btnFlipX, btnFlipY;
     private JButton btnShearUp, btnShearDown;
     private JButton btnApplyMatrix, btnClear;
+
+    private CustomCanvas canvas;
 
     public Preview(LayeredFigure lFigure) {
 
@@ -47,24 +58,28 @@ public class Preview extends JFrame {
         toolsPanelA = new JPanel();
         toolsPanelB = new JPanel();
 
-        canvas = new CustomCanvas();
+        menuBar = new JMenuBar();
+        menuTransormations = new JMenu("Transformations");
+        menuExit = new JMenu("Exit");
+        mItemTranslate = new JMenuItem("Translate");
+        mItemRotate = new JMenuItem("Rotate");
+        mItemScale = new JMenuItem("Scale");
+        mItemShear = new JMenuItem("Shear");
 
         btnTransUp = new JButton();
         btnTransRight = new JButton();
         btnTransDown = new JButton();
         btnTransLeft = new JButton();
-
         btnRotateRight = new JButton();
         btnRotateLeft = new JButton();
-
         btnScaleUp = new JButton();
         btnScaleDown = new JButton();
-
         btnShearUp = new JButton();
         btnShearDown = new JButton();
-
         btnFlipX = new JButton();
         btnFlipY = new JButton();
+
+        canvas = new CustomCanvas();
 
         btnApplyMatrix = new JButton();
         btnClear = new JButton();
@@ -78,6 +93,33 @@ public class Preview extends JFrame {
     }
 
     public void addListeners() {
+
+        // ### JMenuBar ### +++
+        menuExit.addMenuListener(new MenuListener() {
+            public void menuSelected(MenuEvent e) {
+                System.exit(0);
+            }
+
+            public void menuDeselected(MenuEvent e) {
+                // Do nothing.
+            }
+
+            public void menuCanceled(MenuEvent e) {
+                // Do nothing.
+            }
+        });
+
+        mItemTranslate
+                .addActionListener(new AbstractDialogEventListener(AbstractDialogForm.TRANSLATE));
+
+        mItemRotate.addActionListener(new AbstractDialogEventListener(AbstractDialogForm.ROTATE));
+
+        mItemScale.addActionListener(new AbstractDialogEventListener(AbstractDialogForm.SCALE));
+
+        mItemShear.addActionListener(new AbstractDialogEventListener(AbstractDialogForm.SHEAR));
+        // ### JMenuBar ### ---
+
+        // ### JButtons ### +++
         btnTransUp.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 canvas.getTransformMatrix().translate(0, -10);
@@ -185,15 +227,18 @@ public class Preview extends JFrame {
             public void actionPerformed(ActionEvent e) {
                 canvas.getTransformMatrix().setTransform(1, 0, 0, 1,
                         80 + (W / 2) - (lFigure.getHeight() / 2),
-                        (H / 2) - (lFigure.getWidth() / 2));
+                        20 + (H / 2) - (lFigure.getWidth() / 2));
             }
         });
+        // ### JButtons ### ---
     }
 
     public void setAttributes() {
         this.setTitle("AffineTransform");
         this.setResizable(false);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+        this.setJMenuBar(menuBar);
 
         mainPanel.setLayout(new BorderLayout());
         toolsPanel.setLayout(new BoxLayout(toolsPanel, BoxLayout.LINE_AXIS));
@@ -308,6 +353,14 @@ public class Preview extends JFrame {
     }
 
     public void build() {
+
+        menuTransormations.add(mItemTranslate);
+        menuTransormations.add(mItemRotate);
+        menuTransormations.add(mItemScale);
+        menuTransormations.add(mItemShear);
+        menuBar.add(menuTransormations);
+        menuBar.add(menuExit);
+
         toolsPanelA.add(btnTransUp);
         toolsPanelA.add(btnTransLeft);
         toolsPanelA.add(btnRotateLeft);
@@ -363,7 +416,7 @@ public class Preview extends JFrame {
 
         public CustomCanvas() {
             aT = new AffineTransform(1, 0, 0, 1, 80 + (W / 2) - (lFigure.getHeight() / 2),
-                    (H / 2) - (lFigure.getWidth() / 2));
+                    20 + (H / 2) - (lFigure.getWidth() / 2));
         }
 
         protected void paintComponent(Graphics g) {
@@ -385,6 +438,79 @@ public class Preview extends JFrame {
 
         public AffineTransform getTransformMatrix() {
             return this.aT;
+        }
+
+    }
+
+    class AbstractDialogEventListener implements ActionListener {
+
+        private int action;
+
+        public AbstractDialogEventListener(int action) {
+            this.action = action;
+        }
+
+        public void actionPerformed(ActionEvent e) {
+
+            String instruction = "", title = "";
+            String[] labels = new String[0];
+
+            switch (action) {
+                case AbstractDialogForm.TRANSLATE:
+                    instruction = "Enter translation values:";
+                    labels = new String[] {"X: ", "Y: "};
+                    title = "Translation";
+                    break;
+                case AbstractDialogForm.ROTATE:
+                    instruction = "Enter rotation values:";
+                    labels = new String[] {"Deg: "};
+                    title = "Rotation";
+                    break;
+                case AbstractDialogForm.SCALE:
+                    instruction = "Enter scaling values:";
+                    labels = new String[] {"X: ", "Y: "};
+                    title = "Scaling";
+                    break;
+                case AbstractDialogForm.SHEAR:
+                    instruction = "Enter shearing values:";
+                    labels = new String[] {"X: ", "Y: "};
+                    title = "Shearing";
+                    break;
+            }
+
+            AbstractDialogForm absDialog = new AbstractDialogForm(instruction, labels);
+
+            int result = JOptionPane.showConfirmDialog(null, absDialog, title,
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+
+            switch (result) {
+                case JOptionPane.OK_OPTION:
+                    try {
+                        double[] values = absDialog.getValues();
+
+                        switch (action) {
+                            case AbstractDialogForm.TRANSLATE:
+                                canvas.getTransformMatrix().translate(values[0], values[1]);
+                                break;
+                            case AbstractDialogForm.ROTATE:
+                                canvas.getTransformMatrix().rotate(Math.PI / 180 * values[0],
+                                        lFigure.getWidth() / 2, lFigure.getHeight() / 2);
+                                break;
+                            case AbstractDialogForm.SCALE:
+                                canvas.getTransformMatrix().scale(values[0], values[1]);
+                                break;
+                            case AbstractDialogForm.SHEAR:
+                                canvas.getTransformMatrix().shear(values[0], values[1]);
+                                break;
+                        }
+
+                    } catch (Exception error) {
+                        JOptionPane.showMessageDialog(null, "Error! Invalid values.", "Error :(",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                    break;
+            }
         }
 
     }
