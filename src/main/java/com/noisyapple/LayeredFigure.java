@@ -1,10 +1,11 @@
 package com.noisyapple;
 
-import java.awt.Graphics2D;
 import java.awt.Color;
+import java.awt.Graphics2D;
 import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.awt.BasicStroke;
 
 // Models a dynamic layered figure, each figure can have any amount of layers and each layer any
 // amount of points.
@@ -35,23 +36,28 @@ public class LayeredFigure {
             }
         }
 
-        // All points are modified so the figure starts from 0, 0.
+        width = maxX - minX; // Width of the figure.
+        height = maxY - minY; // Height of the figure.
+
+        // All points are modified so the figure'center is at 0, 0.
         for (Point[] layer : layers) {
             int innerMinX = minX;
             int innerMinY = minY;
-            this.layers.add(Arrays.stream(layer)
-                    .map(p -> new Point((int) p.getX() - innerMinX, (int) p.getY() - innerMinY))
-                    .toArray(Point[]::new));
+            this.layers
+                    .add(Arrays.stream(layer)
+                            .map(p -> new Point((int) p.getX() - innerMinX - (width / 2),
+                                    (int) p.getY() - innerMinY - (height / 2)))
+                            .toArray(Point[]::new));
         }
 
-        width = maxX - minX; // Width of the figure.
-        height = maxY - minY; // Height of the figure.
     }
 
     // Draws every layer with its correspondant color.
     public void drawLayeredFigure(Graphics2D ctx) {
 
         int colorIndex = 0;
+
+        ctx.setStroke(new BasicStroke(2));
 
         for (Point[] layer : layers) {
             ctx.setColor(layerColors[colorIndex]);

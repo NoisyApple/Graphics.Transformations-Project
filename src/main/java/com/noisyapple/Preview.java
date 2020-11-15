@@ -21,6 +21,7 @@ import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
 import javax.swing.JMenu;
 import javax.swing.JMenuBar;
 import javax.swing.JMenuItem;
@@ -45,22 +46,23 @@ public class Preview extends JFrame {
 
     private JMenuBar menuBar;
     private JMenu menuTransormations, menuExit;
-    private JMenuItem mItemTranslate, mItemRotate, mItemScale, mItemShear;
+    private JMenuItem mItemTranslate, mItemRotate, mItemScale, mItemShear, mItemRestore;
 
     private JButton btnTransUp, btnTransRight, btnTransDown, btnTransLeft;
     private JButton btnRotateRight, btnRotateLeft;
     private JButton btnScaleUp, btnScaleDown;
     private JButton btnFlipX, btnFlipY;
     private JButton btnShearUp, btnShearDown;
-    private JButton btnApplyMatrix, btnClear;
+    private JButton btnApplyMatrix, btnRestore;
+    private JButton btnInfo;
 
     private CustomCanvas canvas;
 
     public Preview(LayeredFigure lFigure) {
 
         this.lFigure = lFigure;
-        x = 80 + (W / 2) - (lFigure.getHeight() / 2);
-        y = 23 + (H / 2) - (lFigure.getWidth() / 2);
+        x = 80 + (W / 2);
+        y = 23 + (H / 2);
         prevX = x;
         prevY = y;
 
@@ -78,6 +80,7 @@ public class Preview extends JFrame {
         mItemRotate = new JMenuItem("Rotate");
         mItemScale = new JMenuItem("Scale");
         mItemShear = new JMenuItem("Shear");
+        mItemRestore = new JMenuItem("Restore");
 
         // Buttons.
         btnTransUp = new JButton();
@@ -93,7 +96,8 @@ public class Preview extends JFrame {
         btnFlipX = new JButton();
         btnFlipY = new JButton();
         btnApplyMatrix = new JButton();
-        btnClear = new JButton();
+        btnRestore = new JButton();
+        btnInfo = new JButton();
 
         // Canvas.
         canvas = new CustomCanvas();
@@ -132,29 +136,28 @@ public class Preview extends JFrame {
         mItemScale.addActionListener(new AbstractDialogEventListener(AbstractDialogForm.SCALE));
         mItemShear.addActionListener(new AbstractDialogEventListener(AbstractDialogForm.SHEAR));
 
+        // Restores matrix to a default value.
+        mItemRestore.addActionListener(e -> {
+            x = 80 + (W / 2);
+            y = 23 + (H / 2);
+            canvas.getTransformMatrix().setTransform(1, 0, 0, 1, x, y);
+        });
+
         // ### JMenuBar ### ---
 
         // ### JButtons ### +++
 
         // Translates 10px to the top.
-        btnTransUp.addActionListener(e -> {
-            canvas.getTransformMatrix().translate(0, -10);
-        });
+        btnTransUp.addActionListener(e -> y -= 10);
 
         // Translates 10px to the right.
-        btnTransRight.addActionListener(e -> {
-            canvas.getTransformMatrix().translate(10, 0);
-        });
+        btnTransRight.addActionListener(e -> x += 10);
 
         // Translates 10px to the bottom.
-        btnTransDown.addActionListener(e -> {
-            canvas.getTransformMatrix().translate(0, 10);
-        });
+        btnTransDown.addActionListener(e -> y += 10);
 
         // Translates 10px to the left.
-        btnTransLeft.addActionListener(e -> {
-            canvas.getTransformMatrix().translate(-10, 0);
-        });
+        btnTransLeft.addActionListener(e -> x -= 10);
 
         // Rotates to the right.
         btnRotateRight.addActionListener(e -> {
@@ -208,12 +211,17 @@ public class Preview extends JFrame {
             switch (result) {
                 case JOptionPane.OK_OPTION:
                     try {
-                        if (mDialog.getConcatenateEnabled())
+                        if (mDialog.getConcatenateEnabled()) {
+                            x += mDialog.getValues()[4];
+                            y += mDialog.getValues()[5];
                             canvas.getTransformMatrix()
                                     .concatenate(new AffineTransform(mDialog.getValues()));
-                        else
+                        } else {
+                            x = mDialog.getValues()[4];
+                            y = mDialog.getValues()[5];
                             canvas.getTransformMatrix()
                                     .setTransform(new AffineTransform(mDialog.getValues()));
+                        }
                     } catch (Exception error) {
                         JOptionPane.showMessageDialog(null, "Error! Invalid values.", "Error :(",
                                 JOptionPane.ERROR_MESSAGE);
@@ -223,10 +231,29 @@ public class Preview extends JFrame {
         });
 
         // Restores the matrix to a default value.
-        btnClear.addActionListener(e -> {
-            x = 80 + (W / 2) - (lFigure.getHeight() / 2);
-            y = 23 + (H / 2) - (lFigure.getWidth() / 2);
+        btnRestore.addActionListener(e -> {
+            x = 80 + (W / 2);
+            y = 23 + (H / 2);
             canvas.getTransformMatrix().setTransform(1, 0, 0, 1, x, y);
+        });
+
+        // Prompts a dialog window with information.
+        btnInfo.addActionListener(e -> {
+            String htmlInfo = "<html>"
+                    + "<table><tr><td colspan='2' style='color: #8844ff; font-size: 20px'>KEY SHORTCUTS"
+                    + "</td></tr><tr><td align='left'>Translate to the top:</td><td>UP ARROW</td></tr><tr>"
+                    + "<td align='left'>Translate to the right:</td><td>RIGHT ARROW</td></tr><tr>"
+                    + "<td align='left'>Translate to the bottom:</td><td>DOWN ARROW</td></tr><tr>"
+                    + "<td align='left'>Translate to the left:</td><td>LEFT ARROW</td></tr><tr>"
+                    + "<td align='left'>Rotate to the left:</td><td>CTRL+R</td></tr><tr><td align='left'>"
+                    + "Rotate to the right:</td><td>R</td></tr><tr><td align='left'>Zoom out:</td><td>"
+                    + "CTRL+Z</td></tr><tr><td align='left'>Zoom in:</td><td>Z</td></tr><tr><td align='left'>"
+                    + "Shear out:</td><td>CTRL+S</td></tr><tr><td align='left'>Shear in:</td><td>S</td></tr>"
+                    + "<tr><td align='left'>Flip vertically:</td><td>CTRL+F</td></tr><tr><td align='left'>"
+                    + "Flip horizontally:</td><td>F</td></tr><tr><td align='left'>Restore</td><td>C</td>"
+                    + "</tr></table><html>";
+            JOptionPane.showMessageDialog(null, new JLabel(htmlInfo, JLabel.CENTER),
+                    "Key shortcuts", JOptionPane.PLAIN_MESSAGE);
         });
         // ### JButtons ### ---
 
@@ -288,7 +315,7 @@ public class Preview extends JFrame {
                                     lFigure.getWidth() / 2, lFigure.getHeight() / 2);
                             break;
                         case KeyEvent.VK_Z: // Scale down.
-                            canvas.getTransformMatrix().scale(0.9, 0.9);
+                            canvas.getTransformMatrix().scale(0.975, 0.975);
                             break;
                         case KeyEvent.VK_S: // Shear down.
                             canvas.getTransformMatrix().shear(-0.1, -0.1);
@@ -316,7 +343,7 @@ public class Preview extends JFrame {
                                     lFigure.getHeight() / 2);
                             break;
                         case KeyEvent.VK_Z: // Scale up.
-                            canvas.getTransformMatrix().scale(1.1, 1.1);
+                            canvas.getTransformMatrix().scale(1.025, 1.025);
                             break;
                         case KeyEvent.VK_S: // Shear up.
                             canvas.getTransformMatrix().shear(0.1, 0.1);
@@ -325,8 +352,8 @@ public class Preview extends JFrame {
                             canvas.getTransformMatrix().scale(-1, 1);
                             break;
                         case KeyEvent.VK_C: // Restore.
-                            x = 80 + (W / 2) - (lFigure.getHeight() / 2);
-                            y = 23 + (H / 2) - (lFigure.getWidth() / 2);
+                            x = 80 + (W / 2);
+                            y = 23 + (H / 2);
                             canvas.getTransformMatrix().setTransform(1, 0, 0, 1, x, y);
                             break;
                     }
@@ -424,9 +451,14 @@ public class Preview extends JFrame {
                             .getResource("images/icon-matrix.png"))).getImage()
                                     .getScaledInstance(30, 30, Image.SCALE_SMOOTH)));
 
-            btnClear.setIcon(new ImageIcon(new ImageIcon(Toolkit.getDefaultToolkit()
+            btnRestore.setIcon(new ImageIcon(new ImageIcon(Toolkit.getDefaultToolkit()
                     .getImage(Thread.currentThread().getContextClassLoader()
                             .getResource("images/icon-clear.png"))).getImage().getScaledInstance(30,
+                                    30, Image.SCALE_SMOOTH)));
+
+            btnInfo.setIcon(new ImageIcon(new ImageIcon(Toolkit.getDefaultToolkit()
+                    .getImage(Thread.currentThread().getContextClassLoader()
+                            .getResource("images/icon-info.png"))).getImage().getScaledInstance(30,
                                     30, Image.SCALE_SMOOTH)));
 
             // All buttons are resized.
@@ -448,15 +480,35 @@ public class Preview extends JFrame {
             btnFlipY.setPreferredSize(new Dimension(30, 30));
 
             btnApplyMatrix.setPreferredSize(new Dimension(30, 30));
-            btnClear.setPreferredSize(new Dimension(30, 30));
+            btnRestore.setPreferredSize(new Dimension(30, 30));
 
+            btnInfo.setPreferredSize(new Dimension(30, 30));
+
+            // Makes every button unfocusable.
+            btnTransUp.setFocusable(false);
+            btnTransRight.setFocusable(false);
+            btnTransDown.setFocusable(false);
+            btnTransLeft.setFocusable(false);
+
+            btnRotateRight.setFocusable(false);
+            btnRotateLeft.setFocusable(false);
+
+            btnScaleUp.setFocusable(false);
+            btnScaleDown.setFocusable(false);
+
+            btnShearUp.setFocusable(false);
+            btnShearDown.setFocusable(false);
+
+            btnFlipX.setFocusable(false);
+            btnFlipY.setFocusable(false);
+
+            btnApplyMatrix.setFocusable(false);
+            btnRestore.setFocusable(false);
+
+            btnInfo.setFocusable(false);
 
         } catch (Exception e) {
-
-
         }
-
-
     }
 
     // Builds the GUI.
@@ -467,6 +519,7 @@ public class Preview extends JFrame {
         menuTransormations.add(mItemRotate);
         menuTransormations.add(mItemScale);
         menuTransormations.add(mItemShear);
+        menuTransormations.add(mItemRestore);
         menuBar.add(menuTransormations);
         menuBar.add(menuExit);
 
@@ -476,8 +529,9 @@ public class Preview extends JFrame {
         toolsPanelA.add(btnRotateLeft);
         toolsPanelA.add(btnScaleDown);
         toolsPanelA.add(btnShearDown);
-        toolsPanelA.add(btnFlipX);
+        toolsPanelA.add(btnFlipY);
         toolsPanelA.add(btnApplyMatrix);
+        toolsPanelA.add(btnInfo);
 
         // Tools Panel B.
         toolsPanelB.add(btnTransDown);
@@ -485,8 +539,8 @@ public class Preview extends JFrame {
         toolsPanelB.add(btnRotateRight);
         toolsPanelB.add(btnScaleUp);
         toolsPanelB.add(btnShearUp);
-        toolsPanelB.add(btnFlipY);
-        toolsPanelB.add(btnClear);
+        toolsPanelB.add(btnFlipX);
+        toolsPanelB.add(btnRestore);
 
         // Tools Panel.
         toolsPanel.add(toolsPanelA);
@@ -624,7 +678,8 @@ public class Preview extends JFrame {
 
                         switch (action) {
                             case AbstractDialogForm.TRANSLATE:
-                                canvas.getTransformMatrix().translate(values[0], values[1]);
+                                x += values[0];
+                                y += values[1];
                                 break;
                             case AbstractDialogForm.ROTATE:
                                 canvas.getTransformMatrix().rotate(Math.PI / 180 * values[0],
