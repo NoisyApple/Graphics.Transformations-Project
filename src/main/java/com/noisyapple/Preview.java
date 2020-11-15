@@ -11,9 +11,11 @@ import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseAdapter;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseMotionAdapter;
 import java.awt.geom.AffineTransform;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -273,6 +275,67 @@ public class Preview extends JFrame {
 
         // ### Canvas Mouse Events ### ---
 
+        // ### Frame Key Events ### +++
+
+        addKeyListener(new KeyAdapter() {
+            public void keyPressed(KeyEvent e) {
+
+                // CTRL DOWN
+                if (e.isControlDown()) {
+                    switch (e.getKeyCode()) {
+                        case KeyEvent.VK_R: // Rotate to the left.
+                            canvas.getTransformMatrix().rotate(-Math.PI / 32,
+                                    lFigure.getWidth() / 2, lFigure.getHeight() / 2);
+                            break;
+                        case KeyEvent.VK_Z: // Scale down.
+                            canvas.getTransformMatrix().scale(0.9, 0.9);
+                            break;
+                        case KeyEvent.VK_S: // Shear down.
+                            canvas.getTransformMatrix().shear(-0.1, -0.1);
+                            break;
+                        case KeyEvent.VK_F: // Flip vertically.
+                            canvas.getTransformMatrix().scale(1, -1);
+                            break;
+                    }
+                } else {
+                    switch (e.getKeyCode()) {
+                        case KeyEvent.VK_UP: // Translation to top.
+                            y -= 2;
+                            break;
+                        case KeyEvent.VK_RIGHT: // Translation to right.
+                            x += 2;
+                            break;
+                        case KeyEvent.VK_DOWN: // Translation to bottom.
+                            y += 2;
+                            break;
+                        case KeyEvent.VK_LEFT: // Translation to left.
+                            x -= 2;
+                            break;
+                        case KeyEvent.VK_R: // Rotate to the right.
+                            canvas.getTransformMatrix().rotate(Math.PI / 32, lFigure.getWidth() / 2,
+                                    lFigure.getHeight() / 2);
+                            break;
+                        case KeyEvent.VK_Z: // Scale up.
+                            canvas.getTransformMatrix().scale(1.1, 1.1);
+                            break;
+                        case KeyEvent.VK_S: // Shear up.
+                            canvas.getTransformMatrix().shear(0.1, 0.1);
+                            break;
+                        case KeyEvent.VK_F: // Flip horizontally.
+                            canvas.getTransformMatrix().scale(-1, 1);
+                            break;
+                        case KeyEvent.VK_C: // Restore.
+                            x = 80 + (W / 2) - (lFigure.getHeight() / 2);
+                            y = 23 + (H / 2) - (lFigure.getWidth() / 2);
+                            canvas.getTransformMatrix().setTransform(1, 0, 0, 1, x, y);
+                            break;
+                    }
+                }
+            }
+        });
+
+        // ### Frame Key Events ### ---
+
     }
 
     // Sets attributes to elements in the program.
@@ -280,7 +343,7 @@ public class Preview extends JFrame {
         this.setTitle("AffineTransform");
         this.setResizable(false);
         this.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
+        this.setFocusable(true);
         this.setJMenuBar(menuBar);
 
         mainPanel.setLayout(new BorderLayout());
