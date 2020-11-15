@@ -6,22 +6,26 @@ import java.awt.Point;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+// Models a dynamic layered figure, each figure can have any amount of layers and each layer any
+// amount of points.
 public class LayeredFigure {
 
-    private ArrayList<Point[]> layers = new ArrayList<Point[]>();
-    private Color[] layerColors;
+    private ArrayList<Point[]> layers = new ArrayList<Point[]>(); // Layers array list.
+    private Color[] layerColors; // Layer colors.
     private int width, height;
 
     public LayeredFigure(ArrayList<Point[]> layers, Color[] layerColors) {
         this.layers = new ArrayList<Point[]>();
         this.layerColors = layerColors;
 
+        // Initual values for min and max of x and y.
         int minX = (int) layers.get(0)[0].getX();
         int minY = (int) layers.get(0)[0].getY();
 
         int maxX = 0;
         int maxY = 0;
 
+        // Iterates through each point to get min and max values for x and y.
         for (Point[] layer : layers) {
             for (Point p : layer) {
                 minX = (p.getX() < minX) ? (int) p.getX() : minX;
@@ -31,6 +35,7 @@ public class LayeredFigure {
             }
         }
 
+        // All points are modified so the figure starts from 0, 0.
         for (Point[] layer : layers) {
             int innerMinX = minX;
             int innerMinY = minY;
@@ -39,10 +44,11 @@ public class LayeredFigure {
                     .toArray(Point[]::new));
         }
 
-        width = maxX - minX;
-        height = maxY - minY;
+        width = maxX - minX; // Width of the figure.
+        height = maxY - minY; // Height of the figure.
     }
 
+    // Draws every layer with its correspondant color.
     public void drawLayeredFigure(Graphics2D ctx) {
 
         int colorIndex = 0;
@@ -60,14 +66,17 @@ public class LayeredFigure {
         }
     }
 
+    // Returns figure width.
     public int getWidth() {
         return width;
     }
 
+    // Returns figure height.
     public int getHeight() {
         return height;
     }
 
+    // To string handler method.
     public String toString() {
         String output = "";
 

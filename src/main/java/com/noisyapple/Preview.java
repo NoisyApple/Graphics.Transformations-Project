@@ -11,6 +11,9 @@ import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.MouseMotionAdapter;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
@@ -32,6 +35,8 @@ public class Preview extends JFrame {
     private final int H = 500;
     private final int UPDATE_RATE = 60;
 
+    private double x, y, prevX, prevY;
+
     private LayeredFigure lFigure;
 
     private JPanel mainPanel, toolsPanel, toolsPanelA, toolsPanelB;
@@ -52,12 +57,18 @@ public class Preview extends JFrame {
     public Preview(LayeredFigure lFigure) {
 
         this.lFigure = lFigure;
+        x = 80 + (W / 2) - (lFigure.getHeight() / 2);
+        y = 23 + (H / 2) - (lFigure.getWidth() / 2);
+        prevX = x;
+        prevY = y;
 
+        // Panels.
         mainPanel = new JPanel();
         toolsPanel = new JPanel();
         toolsPanelA = new JPanel();
         toolsPanelB = new JPanel();
 
+        // Menu.
         menuBar = new JMenuBar();
         menuTransormations = new JMenu("Transformations");
         menuExit = new JMenu("Exit");
@@ -66,6 +77,7 @@ public class Preview extends JFrame {
         mItemScale = new JMenuItem("Scale");
         mItemShear = new JMenuItem("Shear");
 
+        // Buttons.
         btnTransUp = new JButton();
         btnTransRight = new JButton();
         btnTransDown = new JButton();
@@ -78,24 +90,26 @@ public class Preview extends JFrame {
         btnShearDown = new JButton();
         btnFlipX = new JButton();
         btnFlipY = new JButton();
-
-        canvas = new CustomCanvas();
-
         btnApplyMatrix = new JButton();
         btnClear = new JButton();
+
+        // Canvas.
+        canvas = new CustomCanvas();
 
         addListeners();
         setAttributes();
         build();
         launch();
         startLoop();
-
     }
 
     public void addListeners() {
 
         // ### JMenuBar ### +++
+
+        // Menu listener implementation.
         menuExit.addMenuListener(new MenuListener() {
+            // Exits the program.
             public void menuSelected(MenuEvent e) {
                 System.exit(0);
             }
@@ -109,130 +123,159 @@ public class Preview extends JFrame {
             }
         });
 
+        // All of the following prompts a window for inputing data based on its action.
         mItemTranslate
                 .addActionListener(new AbstractDialogEventListener(AbstractDialogForm.TRANSLATE));
-
         mItemRotate.addActionListener(new AbstractDialogEventListener(AbstractDialogForm.ROTATE));
-
         mItemScale.addActionListener(new AbstractDialogEventListener(AbstractDialogForm.SCALE));
-
         mItemShear.addActionListener(new AbstractDialogEventListener(AbstractDialogForm.SHEAR));
+
         // ### JMenuBar ### ---
 
         // ### JButtons ### +++
-        btnTransUp.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().translate(0, -10);
+
+        // Translates 10px to the top.
+        btnTransUp.addActionListener(e -> {
+            canvas.getTransformMatrix().translate(0, -10);
+        });
+
+        // Translates 10px to the right.
+        btnTransRight.addActionListener(e -> {
+            canvas.getTransformMatrix().translate(10, 0);
+        });
+
+        // Translates 10px to the bottom.
+        btnTransDown.addActionListener(e -> {
+            canvas.getTransformMatrix().translate(0, 10);
+        });
+
+        // Translates 10px to the left.
+        btnTransLeft.addActionListener(e -> {
+            canvas.getTransformMatrix().translate(-10, 0);
+        });
+
+        // Rotates to the right.
+        btnRotateRight.addActionListener(e -> {
+            canvas.getTransformMatrix().rotate(Math.PI / 8, lFigure.getWidth() / 2,
+                    lFigure.getHeight() / 2);
+        });
+
+        // Rotates to the left.
+        btnRotateLeft.addActionListener(e -> {
+            canvas.getTransformMatrix().rotate(-Math.PI / 8, lFigure.getWidth() / 2,
+                    lFigure.getHeight() / 2);
+        });
+
+        // Scales up the canvas.
+        btnScaleUp.addActionListener(e -> {
+            canvas.getTransformMatrix().scale(1.1, 1.1);
+        });
+
+        // Scales down the canvas.
+        btnScaleDown.addActionListener(e -> {
+            canvas.getTransformMatrix().scale(0.9, 0.9);
+        });
+
+        // Shears with a factor of 0.1 in both ways.
+        btnShearUp.addActionListener(e -> {
+            canvas.getTransformMatrix().shear(0.1, 0.1);
+        });
+
+        // Shears with a factor of -0.1 in both ways.
+        btnShearDown.addActionListener(e -> {
+            canvas.getTransformMatrix().shear(-0.1, -0.1);
+        });
+
+        // Flips horizontally.
+        btnFlipX.addActionListener(e -> {
+            canvas.getTransformMatrix().scale(-1, 1);
+        });
+
+        // Flips vertically.
+        btnFlipY.addActionListener(e -> {
+            canvas.getTransformMatrix().scale(1, -1);
+        });
+
+        // Prompts a dialog for new transform matrix values.
+        btnApplyMatrix.addActionListener(e -> {
+            MatrixDialogForm mDialog = new MatrixDialogForm();
+
+            int result = JOptionPane.showConfirmDialog(null, mDialog, "Transform Matrix",
+                    JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+
+            switch (result) {
+                case JOptionPane.OK_OPTION:
+                    try {
+                        if (mDialog.getConcatenateEnabled())
+                            canvas.getTransformMatrix()
+                                    .concatenate(new AffineTransform(mDialog.getValues()));
+                        else
+                            canvas.getTransformMatrix()
+                                    .setTransform(new AffineTransform(mDialog.getValues()));
+                    } catch (Exception error) {
+                        JOptionPane.showMessageDialog(null, "Error! Invalid values.", "Error :(",
+                                JOptionPane.ERROR_MESSAGE);
+                    }
+                    break;
             }
         });
 
-        btnTransRight.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().translate(10, 0);
-            }
-        });
-
-        btnTransDown.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().translate(0, 10);
-            }
-        });
-
-        btnTransLeft.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().translate(-10, 0);
-            }
-        });
-
-        btnRotateRight.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().rotate(Math.PI / 8, lFigure.getWidth() / 2,
-                        lFigure.getHeight() / 2);
-            }
-        });
-
-        btnRotateLeft.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().rotate(-Math.PI / 8, lFigure.getWidth() / 2,
-                        lFigure.getHeight() / 2);
-            }
-        });
-
-        btnScaleUp.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().scale(1.1, 1.1);
-            }
-        });
-
-        btnScaleDown.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().scale(0.9, 0.9);
-            }
-        });
-
-        btnShearUp.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().shear(0.1, 0.1);
-            }
-        });
-
-        btnShearDown.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().shear(-0.1, -0.1);
-            }
-        });
-
-        btnFlipX.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().scale(-1, 1);
-            }
-        });
-
-        btnFlipY.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().scale(1, -1);
-            }
-        });
-
-
-        btnApplyMatrix.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-
-                MatrixDialogForm mDialog = new MatrixDialogForm();
-
-                int result = JOptionPane.showConfirmDialog(null, mDialog, "Transform Matrix",
-                        JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
-
-                switch (result) {
-                    case JOptionPane.OK_OPTION:
-                        try {
-                            if (mDialog.getConcatenateEnabled())
-                                canvas.getTransformMatrix()
-                                        .concatenate(new AffineTransform(mDialog.getValues()));
-                            else
-                                canvas.getTransformMatrix()
-                                        .setTransform(new AffineTransform(mDialog.getValues()));
-                        } catch (Exception error) {
-                            JOptionPane.showMessageDialog(null, "Error! Invalid values.",
-                                    "Error :(", JOptionPane.ERROR_MESSAGE);
-                        }
-                        break;
-                }
-
-            }
-        });
-
-
-        btnClear.addActionListener(new ActionListener() {
-            public void actionPerformed(ActionEvent e) {
-                canvas.getTransformMatrix().setTransform(1, 0, 0, 1,
-                        80 + (W / 2) - (lFigure.getHeight() / 2),
-                        20 + (H / 2) - (lFigure.getWidth() / 2));
-            }
+        // Restores the matrix to a default value.
+        btnClear.addActionListener(e -> {
+            x = 80 + (W / 2) - (lFigure.getHeight() / 2);
+            y = 23 + (H / 2) - (lFigure.getWidth() / 2);
+            canvas.getTransformMatrix().setTransform(1, 0, 0, 1, x, y);
         });
         // ### JButtons ### ---
+
+        // ### Canvas Mouse Events ### +++
+
+        // Zoom on wheel moved.
+        canvas.addMouseWheelListener(e -> {
+            int rotation = e.getWheelRotation();
+            if (rotation != 0) {
+                canvas.getTransformMatrix().translate(50, 50);
+                canvas.getTransformMatrix().scale((rotation > 0) ? 1.1 : 0.9,
+                        (rotation > 0) ? 1.1 : 0.9);
+                canvas.getTransformMatrix().translate(-50, -50);
+            }
+        });
+
+        // Translation on mouse drag.
+        canvas.addMouseMotionListener(new MouseMotionAdapter() {
+            public void mouseDragged(MouseEvent e) {
+                double difX = e.getX() - prevX;
+                double difY = e.getY() - prevY;
+
+                x += difX;
+                y += difY;
+
+                prevX = e.getX();
+                prevY = e.getY();
+            };
+        });
+
+        canvas.addMouseListener(new MouseAdapter() {
+            // Tracks new position for dragging.
+            public void mousePressed(MouseEvent e) {
+                prevX = e.getX();
+                prevY = e.getY();
+            };
+
+            // Rotation on double click.
+            public void mouseClicked(MouseEvent e) {
+                if (e.getClickCount() == 2) {
+                    canvas.getTransformMatrix().rotate(Math.PI / 8, lFigure.getWidth() / 2,
+                            lFigure.getHeight() / 2);
+                }
+            };
+        });
+
+        // ### Canvas Mouse Events ### ---
+
     }
 
+    // Sets attributes to elements in the program.
     public void setAttributes() {
         this.setTitle("AffineTransform");
         this.setResizable(false);
@@ -251,8 +294,8 @@ public class Preview extends JFrame {
         toolsPanelA.setAlignmentY(Component.TOP_ALIGNMENT);
         toolsPanel.setBackground(Color.decode("#888888"));
 
+        // Sets icons to buttons from resources.
         try {
-
             btnTransUp.setIcon(new ImageIcon(new ImageIcon(Toolkit.getDefaultToolkit()
                     .getImage(Thread.currentThread().getContextClassLoader()
                             .getResource("images/icon-up.png"))).getImage().getScaledInstance(30,
@@ -323,6 +366,7 @@ public class Preview extends JFrame {
                             .getResource("images/icon-clear.png"))).getImage().getScaledInstance(30,
                                     30, Image.SCALE_SMOOTH)));
 
+            // All buttons are resized.
             btnTransUp.setPreferredSize(new Dimension(30, 30));
             btnTransRight.setPreferredSize(new Dimension(30, 30));
             btnTransDown.setPreferredSize(new Dimension(30, 30));
@@ -352,8 +396,10 @@ public class Preview extends JFrame {
 
     }
 
+    // Builds the GUI.
     public void build() {
 
+        // Menu.
         menuTransormations.add(mItemTranslate);
         menuTransormations.add(mItemRotate);
         menuTransormations.add(mItemScale);
@@ -361,6 +407,7 @@ public class Preview extends JFrame {
         menuBar.add(menuTransormations);
         menuBar.add(menuExit);
 
+        // Tools Panel A.
         toolsPanelA.add(btnTransUp);
         toolsPanelA.add(btnTransLeft);
         toolsPanelA.add(btnRotateLeft);
@@ -369,6 +416,7 @@ public class Preview extends JFrame {
         toolsPanelA.add(btnFlipX);
         toolsPanelA.add(btnApplyMatrix);
 
+        // Tools Panel B.
         toolsPanelB.add(btnTransDown);
         toolsPanelB.add(btnTransRight);
         toolsPanelB.add(btnRotateRight);
@@ -377,26 +425,41 @@ public class Preview extends JFrame {
         toolsPanelB.add(btnFlipY);
         toolsPanelB.add(btnClear);
 
+        // Tools Panel.
         toolsPanel.add(toolsPanelA);
         toolsPanel.add(toolsPanelB);
 
+        // Main Panel.
         mainPanel.add(toolsPanel, BorderLayout.WEST);
         mainPanel.add(canvas, BorderLayout.EAST);
 
+        // Frame.
         this.add(mainPanel);
     }
 
+    // Launches the program.
     public void launch() {
         this.pack();
         this.setLocationRelativeTo(null);
         this.setVisible(true);
     }
 
+    // Draw Loop.
     public void startLoop() {
         Thread drawLoop = new Thread() {
             public void run() {
                 while (true) {
                     repaint();
+
+                    double[] matrix = new double[6];
+
+                    canvas.getTransformMatrix().getMatrix(matrix);
+                    matrix[4] = x;
+                    matrix[5] = y;
+
+                    // Canvas is translated based on the actual x and y value modified when
+                    // dragging.
+                    canvas.getTransformMatrix().setTransform(new AffineTransform(matrix));
 
                     try {
                         Thread.sleep(1000 / UPDATE_RATE); // Desired frame rate.
@@ -410,13 +473,13 @@ public class Preview extends JFrame {
         drawLoop.start();
     }
 
+    // Custom JPanel for canvas purposes.
     class CustomCanvas extends JPanel {
 
         private AffineTransform aT;
 
         public CustomCanvas() {
-            aT = new AffineTransform(1, 0, 0, 1, 80 + (W / 2) - (lFigure.getHeight() / 2),
-                    20 + (H / 2) - (lFigure.getWidth() / 2));
+            aT = new AffineTransform(1, 0, 0, 1, x, y); // Default matrix values.
         }
 
         protected void paintComponent(Graphics g) {
@@ -427,21 +490,24 @@ public class Preview extends JFrame {
             g2.setColor(Color.decode("#333333"));
             g2.fillRect(0, 0, W, H);
 
-            g2.setTransform(aT);
+            g2.setTransform(aT); // AffineTransform is applied to the context.
 
-            lFigure.drawLayeredFigure(g2);
+            lFigure.drawLayeredFigure(g2); // Figure is drawn.
         }
 
+        // Overrides the method to return the desired dimension.
         public Dimension getPreferredSize() {
             return new Dimension(W, H);
         }
 
+        // Returns the aT object.
         public AffineTransform getTransformMatrix() {
             return this.aT;
         }
 
     }
 
+    // Event handler for menu items.
     class AbstractDialogEventListener implements ActionListener {
 
         private int action;
@@ -450,11 +516,13 @@ public class Preview extends JFrame {
             this.action = action;
         }
 
+        // When the menu is selected, actionPerformed works based on the action of the menu.
         public void actionPerformed(ActionEvent e) {
 
             String instruction = "", title = "";
             String[] labels = new String[0];
 
+            // Texts are set based on action.
             switch (action) {
                 case AbstractDialogForm.TRANSLATE:
                     instruction = "Enter translation values:";
@@ -478,14 +546,16 @@ public class Preview extends JFrame {
                     break;
             }
 
+            // An instance of AbstractDialogForm is constructed based on the action selected.
             AbstractDialogForm absDialog = new AbstractDialogForm(instruction, labels);
 
             int result = JOptionPane.showConfirmDialog(null, absDialog, title,
                     JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
 
-
             switch (result) {
                 case JOptionPane.OK_OPTION:
+
+                    // A transformation is applied based on the action selected.
                     try {
                         double[] values = absDialog.getValues();
 
